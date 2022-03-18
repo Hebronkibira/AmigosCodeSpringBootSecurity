@@ -1,6 +1,7 @@
 package com.hebronworks;
 
 
+import com.hebronworks.filters.CsrfLoggerFilter;
 import com.hebronworks.securityconfig.ApplicationUserPermissions;
 import com.hebronworks.securityconfig.ApplicationUserRole;
 import com.hebronworks.securityconfig.PasswordConfig;
@@ -18,10 +19,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
 
-import static com.hebronworks.securityconfig.ApplicationUserPermissions.STUDENT_WRITE;
 import static com.hebronworks.securityconfig.ApplicationUserRole.*;
 
 @Configuration
@@ -40,18 +42,19 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http .csrf().disable()
+
+        http. csrf()
+                .disable()
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
-//                .antMatchers(HttpMethod.POST,"/management/api/**").hasAnyAuthority(STUDENT_WRITE.getPermission())
-//                .antMatchers(HttpMethod.PUT,"/management/api/**").hasAnyAuthority(STUDENT_WRITE.getPermission())
-//                .antMatchers(HttpMethod.DELETE,"/management/api/**").hasAnyAuthority(STUDENT_WRITE.getPermission())
-//                .antMatchers(HttpMethod.GET,"/management/api/**").hasAnyRole(ADMIN.name(),ADMINTRAINEE.name())
                 .anyRequest()
                 .authenticated()
                 .and()
-                .httpBasic();
+                .formLogin().
+                loginPage("/login")
+                .permitAll()
+                .defaultSuccessUrl("/courses",true);
     }
 
     @Override
@@ -59,9 +62,9 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
     protected UserDetailsService userDetailsService() {
         UserDetails annaSmaithUser = User.builder().
                 username("annasmith")
-                 .password(passwordEncoder.encode("password"))
+                .password(passwordEncoder.encode("password"))
                 .authorities(STUDENT.getGrantedAuthorities())
-               // .roles(STUDENT.name())
+                // .roles(STUDENT.name())
                 .build();
 
         UserDetails mooreJohnsonUser = User.builder().
@@ -78,7 +81,7 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
                 //.roles(ADMINTRAINEE.name())
                 .build();
         return new InMemoryUserDetailsManager(
-                annaSmaithUser,mooreJohnsonUser,tomUser
+                annaSmaithUser, mooreJohnsonUser, tomUser
         );
 
     }

@@ -2,6 +2,8 @@ package com.hebronworks.controller;
 
 
 import com.hebronworks.model.Student;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,8 +17,9 @@ public class StudentManagementController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','ADMINTRAINEE')")
-    public static List<Student> getAllStudents() {
-        return STUDENTS;
+    public static ResponseEntity<Student> getAllStudents() {
+
+        return new ResponseEntity(STUDENTS, HttpStatus.OK);
     }
 
     @PostMapping
