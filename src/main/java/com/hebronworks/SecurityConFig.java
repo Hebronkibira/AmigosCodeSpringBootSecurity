@@ -19,10 +19,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.hebronworks.securityconfig.ApplicationUserRole.*;
 
@@ -43,7 +41,7 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-        http. csrf()
+        http.csrf()
                 .disable()
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
@@ -51,10 +49,21 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .authenticated()
                 .and()
-                .formLogin().
-                loginPage("/login")
+                .formLogin()
+                .loginPage("/login").passwordParameter("password").usernameParameter("username")
                 .permitAll()
-                .defaultSuccessUrl("/courses",true);
+                .defaultSuccessUrl("/courses", true)//Always redirects to this page after successful authentication
+                .and().
+                rememberMe().
+                tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21))
+                .rememberMeParameter("remember-me")//Overrides the default 1 week validity for the token
+                .and()
+                .logout()
+                     .logoutUrl("/logout")
+                     .clearAuthentication(true)
+                     .invalidateHttpSession(true)
+                     .deleteCookies("remember-me","JSESSIONID")//delete all cookie
+                     .logoutSuccessUrl("/login");
     }
 
     @Override
