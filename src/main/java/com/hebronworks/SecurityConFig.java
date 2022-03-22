@@ -1,24 +1,18 @@
 package com.hebronworks;
 
 
-import com.hebronworks.filters.CsrfLoggerFilter;
-import com.hebronworks.securityconfig.ApplicationUserPermissions;
-import com.hebronworks.securityconfig.ApplicationUserRole;
-import com.hebronworks.securityconfig.PasswordConfig;
+import com.hebronworks.auth.ApplicationUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,12 +24,16 @@ import static com.hebronworks.securityconfig.ApplicationUserRole.*;
 public class SecurityConFig extends WebSecurityConfigurerAdapter {
 
     private PasswordEncoder passwordEncoder;
+    private final ApplicationUserDetailsService applicationUserDetailsService;
 
     @Autowired
-    public SecurityConFig(PasswordEncoder passwordEncoder) {
+    public SecurityConFig(PasswordEncoder passwordEncoder, ApplicationUserDetailsService applicationUserDetailsService) {
         this.passwordEncoder = passwordEncoder;
 
+        this.applicationUserDetailsService = applicationUserDetailsService;
     }
+
+
 
 
     @Override
@@ -66,32 +64,16 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
                      .logoutSuccessUrl("/login");
     }
 
-    @Override
     @Bean
-    protected UserDetailsService userDetailsService() {
-        UserDetails annaSmaithUser = User.builder().
-                username("annasmith")
-                .password(passwordEncoder.encode("password"))
-                .authorities(STUDENT.getGrantedAuthorities())
-                // .roles(STUDENT.name())
-                .build();
+    public DaoAuthenticationProvider daoAuthenticationProvider(){
+        DaoAuthenticationProvider provider= new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder);
+        provider.setUserDetailsService(applicationUserDetailsService);
+        return provider;
+    }
 
-        UserDetails mooreJohnsonUser = User.builder().
-                username("moorej")
-                .password(passwordEncoder.encode("password123"))
-                .authorities(ADMIN.getGrantedAuthorities())
-                //.roles(ADMIN.name())
-                .build();
-
-        UserDetails tomUser = User.builder().
-                username("tom")
-                .password(passwordEncoder.encode("password123"))
-                .authorities(ADMINTRAINEE.getGrantedAuthorities())
-                //.roles(ADMINTRAINEE.name())
-                .build();
-        return new InMemoryUserDetailsManager(
-                annaSmaithUser, mooreJohnsonUser, tomUser
-        );
-
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(daoAuthenticationProvider());
     }
 }
