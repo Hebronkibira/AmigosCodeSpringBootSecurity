@@ -9,21 +9,23 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ApplicationUserDetailsService implements UserDetailsService {
-    private  final  ApplicationUserDao applicationUserDao;
+    private final ApplicationUserDao applicationUserDao;
 
-     @Autowired
+    @Autowired
     public ApplicationUserDetailsService(@Qualifier("fake") ApplicationUserDao applicationUserDao) {
         this.applicationUserDao = applicationUserDao;
     }
 
     /**
-     * This method can be used with different implementation for getting the user from the database
+     * Fetches the UserDetails of a user based on the provided username.
+     *
+     * @param username
      * @return UserDetails
-     * */
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         return applicationUserDao.selectUserByUsername(username).//Can be changed with different ways of getting the user
-                orElseThrow(() -> new UsernameNotFoundException(String.format("User %s not found",username)));
+                orElseThrow(() -> new UsernameNotFoundException(String.format("User %s not found", username)));
     }
 }

@@ -2,6 +2,8 @@ package com.hebronworks;
 
 
 import com.hebronworks.auth.ApplicationUserDetailsService;
+import com.hebronworks.jwt.JwtTokenVerifier;
+import com.hebronworks.jwt.JwtUsernamePasswordAuthenticatonFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +14,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.concurrent.TimeUnit;
@@ -29,7 +32,6 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
     @Autowired
     public SecurityConFig(PasswordEncoder passwordEncoder, ApplicationUserDetailsService applicationUserDetailsService) {
         this.passwordEncoder = passwordEncoder;
-
         this.applicationUserDetailsService = applicationUserDetailsService;
     }
 
@@ -41,27 +43,16 @@ public class SecurityConFig extends WebSecurityConfigurerAdapter {
 
         http.csrf()
                 .disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilter(new JwtUsernamePasswordAuthenticatonFilter( authenticationManager())) //Configure the filter just before
+                .addFilterAfter(new JwtTokenVerifier(),JwtUsernamePasswordAuthenticatonFilter.class)
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
                 .anyRequest()
-                .authenticated()
-                .and()
-                .formLogin()
-                .loginPage("/login").passwordParameter("password").usernameParameter("username")
-                .permitAll()
-                .defaultSuccessUrl("/courses", true)//Always redirects to this page after successful authentication
-                .and().
-                rememberMe().
-                tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21))
-                .rememberMeParameter("remember-me")//Overrides the default 1 week validity for the token
-                .and()
-                .logout()
-                     .logoutUrl("/logout")
-                     .clearAuthentication(true)
-                     .invalidateHttpSession(true)
-                     .deleteCookies("remember-me","JSESSIONID")//delete all cookie
-                     .logoutSuccessUrl("/login");
+                .authenticated();
+
     }
 
     @Bean
